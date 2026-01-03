@@ -295,9 +295,9 @@ Analysis complete! The visualization shows:
             # Create visualization
             fig, ax = plt.subplots(figsize=(18, 12))
             
-            # Set background color
-            ax.set_facecolor('#f0f0f0')
-            fig.patch.set_facecolor('white')
+            # Set background color (dark theme)
+            ax.set_facecolor('#000000')
+            fig.patch.set_facecolor('#000000')
             
             # Get race results to order drivers
             results = race_session.results.sort_values('Points', ascending=False)
@@ -364,17 +364,23 @@ Analysis complete! The visualization shows:
                 
                 # Add total laps at the end of the bar
                 ax.text(left_pos + 2, idx, f"({int(left_pos)})", 
-                       va='center', ha='left', fontsize=9, fontweight='bold', color='#333333')
+                       va='center', ha='left', fontsize=9, fontweight='bold', color='white')
             
             # Customize plot
             ax.set_yticks(y_pos)
-            ax.set_yticklabels([d['driver'] for d in driver_data], fontsize=12, fontweight='bold')
-            ax.set_xlabel('Lap Number', fontsize=13, fontweight='bold')
+            ax.set_yticklabels([d['driver'] for d in driver_data], fontsize=12, fontweight='bold', color='white')
+            ax.set_xlabel('Lap Number', fontsize=13, fontweight='bold', color='white')
             ax.set_title(f'{year} {race} - Tyre Strategy by Driver\n(Ordered by Race Results)', 
-                        fontsize=15, fontweight='bold', pad=20)
+                        fontsize=15, fontweight='bold', pad=20, color='white')
             ax.invert_yaxis()
-            ax.grid(axis='x', alpha=0.4, linestyle='--', linewidth=0.8)
+            ax.grid(axis='x', alpha=0.3, linestyle='--', linewidth=0.8, color='#444444')
             ax.set_axisbelow(True)
+            ax.tick_params(axis='x', colors='white')
+            ax.tick_params(axis='y', colors='white')
+            ax.spines['bottom'].set_color('white')
+            ax.spines['left'].set_color('white')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
             
             # Set x-axis limits with padding
             max_laps = max(sum(s['laps_count'] for s in d['stints']) for d in driver_data)
@@ -387,12 +393,15 @@ Analysis complete! The visualization shows:
                     legend_labels.append(compound)
             
             legend_elements = [plt.Rectangle((0,0),1,1, facecolor=tyre_colors[compound], 
-                                              edgecolor='black', linewidth=1.5, label=compound)
+                                              edgecolor='white', linewidth=1.5, label=compound)
                                for compound in legend_labels]
             
-            ax.legend(handles=legend_elements, loc='upper right', fontsize=14, 
+            legend = ax.legend(handles=legend_elements, loc='upper right', fontsize=14, 
                      title='Tyre Compound', title_fontsize=15, framealpha=0.95,
-                     edgecolor='black', fancybox=True)
+                     edgecolor='white', fancybox=True)
+            legend.get_frame().set_facecolor('#1a1a1a')
+            plt.setp(legend.get_texts(), color='white')
+            plt.setp(legend.get_title(), color='white')
             
             # Adjust layout
             plt.tight_layout()
