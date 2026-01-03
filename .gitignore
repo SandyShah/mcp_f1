@@ -1,0 +1,35 @@
+# Python virtual environment
+f1_env/
+venv/
+env/
+*.pyc
+__pycache__/
+
+# FastF1 cache
+.fastf1/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Generated visualizations (optional - remove this line if you want to commit them)
+f1_visualizations/
+
+# VS Code workspace settings (keep .vscode/mcp.json and .vscode/settings.json)
+.vscode/*
+!.vscode/mcp.json
+!.vscode/settings.json
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Python distribution
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~

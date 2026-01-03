@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastf1-mcp-server"
+version = "0.1.0"
+description = "MCP Server for Formula 1 data analysis using FastF1"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "fastf1>=3.0.0",
+    "matplotlib>=3.5.0",
+    "numpy>=1.21.0",
+    "mcp>=0.1.0",
+]
+
+[project.scripts]
+fastf1-mcp-server = "server:main"
+
+[tool.setuptools.packages.find]
+include = ["server*"]

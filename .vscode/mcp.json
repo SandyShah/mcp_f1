@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "fastf1": {
+      "command": "${workspaceFolder}/f1_env/bin/python",
+      "args": [
+        "-m",
+        "server"
+      ],
+      "cwd": "${workspaceFolder}/mcp_f1",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/mcp_f1"
+      }
+    }
+  }
+}
