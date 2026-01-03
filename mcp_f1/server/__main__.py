@@ -20,6 +20,7 @@ def main():
     print("Starting FastF1 MCP Server...")
     print("Available tools:")
     print("  - compare_qualifying_laps: Compare top 3 qualifying laps with telemetry")
+    print("  - visualize_tyre_strategy: Create tyre strategy visualization for a race")
     print("\nServer ready!")
     mcp.run()
 

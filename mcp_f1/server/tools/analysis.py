@@ -175,6 +175,12 @@ def register_analysis_tools(mcp: Any) -> None:
             plt.savefig(output_path, dpi=150, bbox_inches='tight')
             plt.close()
             
+            # Open the image in VS Code
+            try:
+                subprocess.run(['code', output_path], check=False)
+            except Exception:
+                pass  # Silently ignore if VS Code command is not available
+            
             # Build summary text with top 10 results
             summary = f"""
 ╔══════════════════════════════════════════════════════════════════╗
@@ -253,3 +259,206 @@ Analysis complete! The visualization shows:
             
         except Exception as e:
             return f"Error analyzing qualifying laps: {str(e)}\n\nPlease check:\n- Year and race name are correct\n- Session type is valid (Q, Q1, Q2, Q3)\n- Telemetry data is available for this session"
+    
+    @mcp.tool()
+    def visualize_tyre_strategy(year: int, race: str, session: str = "R") -> str:
+        """
+        Create an enhanced tyre strategy visualization for a race.
+        
+        Generates a horizontal stacked bar chart showing each driver's tyre strategy
+        throughout the race, including compound types, stint lengths, and pit stops.
+        Drivers are ordered by race results (points).
+        
+        Args:
+            year: Season year (e.g., 2024)
+            race: Race name or round number (e.g., 'Monaco', 'Abu Dhabi', or '1')
+            session: Session type (default: 'R' for race)
+        
+        Returns:
+            Summary text with tyre strategy stats and visualization file path
+        """
+        try:
+            # Load the race session
+            race_session = fastf1.get_session(year, race, session)
+            race_session.load()
+            
+            # Get all laps with tyre information
+            laps_tyre = race_session.laps
+            
+            if len(laps_tyre) == 0:
+                return f"Error: No lap data found for {year} {race} {session}"
+            
+            # Check if tyre data is available
+            if 'Compound' not in laps_tyre.columns:
+                return f"Error: Tyre compound data not available for this session"
+            
+            # Create visualization
+            fig, ax = plt.subplots(figsize=(18, 12))
+            
+            # Set background color
+            ax.set_facecolor('#f0f0f0')
+            fig.patch.set_facecolor('white')
+            
+            # Get race results to order drivers
+            results = race_session.results.sort_values('Points', ascending=False)
+            driver_order = results['Abbreviation'].tolist()
+            
+            # Filter to only drivers who finished
+            finished_drivers = [d for d in driver_order if d in laps_tyre['Driver'].unique()]
+            
+            # Define tyre colors
+            tyre_colors = {
+                'SOFT': '#E8002D',      # Red
+                'MEDIUM': '#FFED00',    # Yellow
+                'HARD': '#FFFFFF',      # White
+                'INTERMEDIATE': '#00AA00',  # Green
+                'WET': '#0080FF'        # Blue
+            }
+            
+            # Get unique compounds used in the race
+            compounds_used = laps_tyre['Compound'].unique()
+            
+            # Process data for each driver
+            driver_data = []
+            for driver in finished_drivers:
+                driver_laps = laps_tyre.pick_driver(driver).sort_values('LapNumber')
+                
+                stint_info = []
+                for stint in sorted(driver_laps['Stint'].unique()):
+                    stint_laps = driver_laps[driver_laps['Stint'] == stint]
+                    compound = stint_laps['Compound'].iloc[0]
+                    start_lap = stint_laps['LapNumber'].min()
+                    end_lap = stint_laps['LapNumber'].max()
+                    laps_count = int(end_lap - start_lap + 1)
+                    
+                    stint_info.append({
+                        'start_lap': start_lap,
+                        'laps_count': laps_count,
+                        'compound': compound,
+                        'color': tyre_colors.get(compound, '#808080')
+                    })
+                
+                driver_data.append({
+                    'driver': driver,
+                    'stints': stint_info
+                })
+            
+            # Plot bars
+            y_pos = np.arange(len(driver_data))
+            for idx, data in enumerate(driver_data):
+                left_pos = 0
+                for stint in data['stints']:
+                    # Draw bar with black edge
+                    ax.barh(idx, stint['laps_count'], left=left_pos, 
+                            color=stint['color'], edgecolor='black', linewidth=1.5,
+                            height=0.7)
+                    
+                    # Add lap count text in the middle of each stint bar
+                    text_color = 'black' if stint['compound'] not in ['SOFT', 'INTERMEDIATE', 'WET'] else 'white'
+                    ax.text(left_pos + stint['laps_count']/2, idx, 
+                           f"{stint['laps_count']}", 
+                           va='center', ha='center', fontsize=14, fontweight='bold',
+                           color=text_color)
+                    
+                    left_pos += stint['laps_count']
+                
+                # Add total laps at the end of the bar
+                ax.text(left_pos + 2, idx, f"({int(left_pos)})", 
+                       va='center', ha='left', fontsize=9, fontweight='bold', color='#333333')
+            
+            # Customize plot
+            ax.set_yticks(y_pos)
+            ax.set_yticklabels([d['driver'] for d in driver_data], fontsize=12, fontweight='bold')
+            ax.set_xlabel('Lap Number', fontsize=13, fontweight='bold')
+            ax.set_title(f'{year} {race} - Tyre Strategy by Driver\n(Ordered by Race Results)', 
+                        fontsize=15, fontweight='bold', pad=20)
+            ax.invert_yaxis()
+            ax.grid(axis='x', alpha=0.4, linestyle='--', linewidth=0.8)
+            ax.set_axisbelow(True)
+            
+            # Set x-axis limits with padding
+            max_laps = max(sum(s['laps_count'] for s in d['stints']) for d in driver_data)
+            ax.set_xlim(0, max_laps + 5)
+            
+            # Create custom legend
+            legend_labels = []
+            for compound in ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET']:
+                if compound in compounds_used:
+                    legend_labels.append(compound)
+            
+            legend_elements = [plt.Rectangle((0,0),1,1, facecolor=tyre_colors[compound], 
+                                              edgecolor='black', linewidth=1.5, label=compound)
+                               for compound in legend_labels]
+            
+            ax.legend(handles=legend_elements, loc='upper right', fontsize=14, 
+                     title='Tyre Compound', title_fontsize=15, framealpha=0.95,
+                     edgecolor='black', fancybox=True)
+            
+            # Adjust layout
+            plt.tight_layout()
+            
+            # Save to workspace directory for VS Code preview
+            workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            output_dir = os.path.join(workspace_root, 'f1_visualizations')
+            os.makedirs(output_dir, exist_ok=True)
+            
+            filename = f"f1_tyre_strategy_{year}_{race}_{session}.png"
+            output_path = os.path.join(output_dir, filename)
+            plt.savefig(output_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            
+            # Open the image in VS Code
+            try:
+                subprocess.run(['code', output_path], check=False)
+            except Exception:
+                pass  # Silently ignore if VS Code command is not available
+            
+            # Calculate summary statistics
+            total_drivers = len(finished_drivers)
+            compound_stats = {}
+            for compound in compounds_used:
+                drivers_using = len(laps_tyre[laps_tyre['Compound'] == compound]['Driver'].unique())
+                compound_stats[compound] = drivers_using
+            
+            # Build summary text
+            summary = f"""
+╔══════════════════════════════════════════════════════════════════╗
+║  {year} {race} - Tyre Strategy Analysis
+╚══════════════════════════════════════════════════════════════════╝
+
+🏁 RACE OVERVIEW:
+  • Total drivers shown: {total_drivers}
+  • Total laps in race: {max_laps}
+  • Tyre compounds used: {', '.join(sorted(compounds_used))}
+
+📊 COMPOUND USAGE:
+"""
+            
+            for compound in sorted(compounds_used):
+                count = compound_stats.get(compound, 0)
+                emoji = {'SOFT': '🔴', 'MEDIUM': '🟡', 'HARD': '⚪', 
+                        'INTERMEDIATE': '🟢', 'WET': '🔵'}.get(compound, '⚫')
+                summary += f"  {emoji} {compound:12s} - {count:2d} drivers used this compound\n"
+            
+            summary += f"""
+🏎️  TYRE STRATEGY INSIGHTS:
+  • Each bar represents one driver (ordered by points)
+  • Bar segments show different stints with tyre compounds
+  • Numbers in segments indicate stint length in laps
+  • Numbers in parentheses show total laps completed
+
+📁 Visualization saved to: {output_path}
+📂 Open the image in VS Code to view the detailed strategy chart
+
+Color Legend:
+  🔴 SOFT (Red) - Softest compound, highest grip, fastest degradation
+  🟡 MEDIUM (Yellow) - Medium compound, balanced performance
+  ⚪ HARD (White) - Hardest compound, lowest grip, slowest degradation
+  🟢 INTERMEDIATE (Green) - Wet weather, medium grip
+  🔵 WET (Blue) - Full wet weather conditions
+"""
+            
+            return summary
+            
+        except Exception as e:
+            return f"Error creating tyre strategy visualization: {str(e)}\n\nPlease check:\n- Year and race name are correct\n- Session type is valid (R for race)\n- Tyre data is available for this session"

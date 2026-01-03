@@ -44,13 +44,13 @@ If you installed the MCP Explorer extension:
 
 ## 🛠️ Available Tools
 
-### compare_qualifying_laps
+### 1. compare_qualifying_laps
 
 **What it does:**
 - Loads qualifying session data
 - Finds top 3 fastest drivers
 - Generates telemetry comparison visualizations
-- Creates PNG with 3 plots: Speed, Throttle/Brake, Detailed Speed
+- Creates PNG with 3 plots: Speed, Throttle, Brake
 
 **Example usage in Copilot Chat:**
 ```
@@ -65,6 +65,40 @@ Compare qualifying laps for Monaco 2024
 **Returns:**
 - Summary with driver names and lap times
 - Path to saved PNG visualization
+
+### 2. visualize_tyre_strategy
+
+**What it does:**
+- Loads race session data
+- Analyzes tyre strategy for all drivers
+- Creates horizontal stacked bar chart showing:
+  - Tyre compounds used by each driver
+  - Stint lengths (number of laps)
+  - Pit stop timing
+  - Total laps completed
+- Drivers ordered by race results (points)
+
+**Example usage in Copilot Chat:**
+```
+Show me tyre strategy for 2024 Abu Dhabi race
+```
+
+**Parameters:**
+- `year`: 2024 (integer)
+- `race`: "Abu Dhabi" (string)
+- `session`: "R" (string, optional, default is "R" for race)
+
+**Returns:**
+- Tyre compound usage statistics
+- Stint analysis for each driver
+- Path to saved PNG visualization with color-coded tyre strategy chart
+
+**Visualization includes:**
+- 🔴 SOFT (Red) - Softest compound
+- 🟡 MEDIUM (Yellow) - Medium compound
+- ⚪ HARD (White) - Hardest compound
+- 🟢 INTERMEDIATE (Green) - Wet weather
+- 🔵 WET (Blue) - Full wet conditions
 
 ## 🐛 Troubleshooting
 
@@ -134,6 +168,18 @@ Analyze top 3 drivers from 2024 Monza qualifying
 
 ```
 Show me telemetry comparison for 2024 Silverstone qualifying
+```
+
+```
+Show me tyre strategy for 2024 Abu Dhabi race
+```
+
+```
+Visualize tyre compounds used in 2024 Singapore GP
+```
+
+```
+Compare pit strategies for 2024 Bahrain race
 ```
 
 ## 📖 Alternative: Manual MCP Inspector
